@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام حسابات فواتير</title>
+    <link rel="icon" type="image/png" href="./image/invoice.png">
+    <link rel="stylesheet" href="./css/all.min.css">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body class="py-5 bg-light">
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center bg-white p-4 rounded shadow-sm border">
+                <h1 class="h3 font-weight-bold text-primary mb-1">نظام فواتير وحسابات العملاء</h1>
+                <p class="text-muted small mb-3">شركة مصطفي موسي</p>
+
+                <div class="d-flex justify-content-center gap-2 mt-2">
+                    <button onclick="exportBackup()" class="btn btn-sm btn-outline-success fw-bold px-3">
+                        📥 تحميل نسخة احتياطية (Backup)
+                    </button>
+                    <button onclick="triggerImport()" class="btn btn-sm btn-outline-dark fw-bold px-3">
+                        📤 استعادة نسخة احتياطية (Restore)
+                    </button>
+                    <input type="file" id="importFile" accept=".json" style="display:none"
+                        onchange="importBackup(event)">
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="bg-white p-3 rounded shadow-sm border h-100 d-flex flex-column justify-content-center">
+                    <label class="form-label font-weight-bold text-secondary">البحث عن عميل:</label>
+                    <input type="text" id="searchInput" oninput="filterCustomers()" class="form-control"
+                        placeholder="اكتب اسم العميل...">
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="bg-white p-3 rounded shadow-sm border">
+                    <span class="d-block mb-3 font-weight-bold text-secondary">إضافة فاتورة / حركة جديدة:</span>
+                    <form id="invoiceForm" onsubmit="addInvoice(event)" class="row g-2">
+                        <div class="col-sm-2">
+                            <input type="text" id="clientCode" oninput="autoFillCustomerByCode()"
+                                class="form-control form-control-sm" placeholder="كود العميل" required>
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="text" id="clientName" oninput="autoFillCustomerByName()"
+                                class="form-control form-control-sm" placeholder="اسم العميل" required>
+                        </div>
+                        <div class="col-sm-3">
+                            <input type="text" id="itemName" class="form-control form-control-sm"
+                                placeholder="الصنف / البيان" required>
+                        </div>
+                        <div class="col-sm-1">
+                            <input type="number" id="itemQty" class="form-control form-control-sm" placeholder="الكمية"
+                                min="1" value="1">
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="number" id="unitPrice" class="form-control form-control-sm"
+                                placeholder="سعر القطعة" min="0">
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="number" id="paidAmount" class="form-control form-control-sm"
+                                placeholder="دفع كم؟ (واصل)" min="0">
+                        </div>
+                        <div class="col-12 mt-2 d-flex gap-2">
+                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm w-100 font-weight-bold">+
+                                حفظ الحركة</button>
+                            <button type="button" id="cancelEditBtn" onclick="cancelEdit()"
+                                class="btn btn-secondary btn-sm d-none" style="width: 150px;">إلغاء التعديل</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="customersContainer" class="row g-4">
+        </div>
+
+
+        <div class="modal fade" id="quickPayModal" tabindex="-1" aria-labelledby="quickPayModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class=" bg-success p-3 text-white d-flex justify-content-between align-content-center">
+                        <h5 class="modal-title" id="quickPayModalLabel">💵 تسجيل دفعة نقدية جديدة</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">اسم العميل:</label>
+                            <input type="text" id="modalCustomerName" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalPaidAmount" class="form-label fw-bold text-success">المبلغ المدفوع
+                                (ج.م):</label>
+                            <input type="number" id="modalPaidAmount"
+                                class="form-control form-control-lg text-center fw-bold border-success" placeholder="0"
+                                min="1" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" onclick="submitQuickPay()" class="btn btn-success px-4 fw-bold">تأكيد
+                            الحفظ والخصم</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+    <script src="js/dom.js"></script>
+
+    <link rel="manifest" href="/manifest.json">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js') // 👈 أضفنا / هنا لضمان المسار الصحيح
+                    .then(reg => console.log('Service Worker Registered Successfully!', reg))
+                    .catch(err => console.error('Service Worker Failed!', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
