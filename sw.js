@@ -1,16 +1,18 @@
-const CACHE_NAME = 'invoice-app-v2'; // قمنا بتغيير الإصدار لكي يستشعر الموبايل التحديث فوراً
+const CACHE_NAME = 'invoice-app-v3'; // رفعنا الإصدار لضمان تحديث المتصفح فوراً
 
+// تحويل المسارات لنسبية (بدون / في الأول) لضمان اشتغالها على جيت هاب أو أي استضافة
 const ASSETS = [
-  '/',                     // 👈 أهم سطر! لحفظ الرابط الرئيسي للموقع
-  '/index.html',           // حفظ الملف باسمه الصريح
-  '/css/bootstrap.min.css',
-  '/css/all.min.css',
-  '/css/style.css',
-  '/js/bootstrap.bundle.min.js',
-  '/js/html2canvas.min.js',
-  '/js/dom.js',
-  '/image/مصطفي موسي.png', // تأكد أن الاسم مطابق تماماً للمجلد عندك بنفس المسافات
-  '/manifest.json'
+  './', 
+  'index.html',
+  'css/bootstrap.min.css',
+  'css/all.min.css',
+  'css/style.css',
+  'js/bootstrap.bundle.min.js',
+  'js/html2canvas.min.js',
+  'js/dom.js',
+  'image/مصطفي موسي.png',
+  'image/invoice.png', // 👈 ضفنا الأيقونة هنا عشان المتصفح يلاقيها ويوافق على التثبيت
+  'manifest.json'
 ];
 
 // تثبيت الـ Service Worker وحفظ الملفات في الكاش
@@ -21,10 +23,9 @@ self.addEventListener('install', (e) => {
       return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting(); // تجعل الـ Service Worker الجديد يشتغل فوراً بدون انتظار إغلاق التطبيق
+  self.skipWaiting();
 });
 
-// تنظيف الكاش القديم (v1) لكي لا يأخذ مساحة من الموبايل
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -41,11 +42,9 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// قراءة الملفات من الكاش مباشرة عند تشغيل الأوفلاين
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((response) => {
-      // إذا وجد الملف في الكاش يعيده فوراً، وإلا يطلبه من السيرفر
       return response || fetch(e.request);
     })
   );

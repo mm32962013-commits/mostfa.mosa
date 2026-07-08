@@ -6,6 +6,12 @@ let editCustomer = null;
 let editIndex = null;
 let currentPayCustomerName = null; // للاحتفاظ باسم العميل الحالي أثناء الدفع
 
+// دالة مساعدة للحصول على التاريخ الحالي بصيغة تفهمها خانة الـ date
+function getLocalISOString() {
+  const tzoffset = (new Date()).getTimezoneOffset() * 60000; // فرق التوقيت بالملي ثانية
+  return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10); // YYYY-MM-DD تم التعديل لتجلب التاريخ فقط
+}
+
 // دالة ذكية لإصلاح وترقية البيانات القديمة في LocalStorage إن وجدت
 function formalizeDataStore() {
   let updated = false;
@@ -200,7 +206,6 @@ function renderTables() {
         <div class="card-footer bg-white border-top-0 pt-3 pb-2 text-center footer-signature-area">
     <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
         
-        <!-- الإدارة الأولى -->
         <div class="text-center text-sm-end">
             <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">إدارة / مصطفى موسى</h6>
             <p class="text-primary fw-bold mb-0" style="font-size: 0.85rem; direction: ltr;">
@@ -208,7 +213,6 @@ function renderTables() {
             </p>
         </div>
 
-        <!-- الفاصل واللوجو في المنتصف -->
         <div class="d-flex align-items-center gap-3">
             <div class="vr opacity-25 d-none d-sm-block" style="height: 45px;"></div>
             <div class="bg-white p-1 rounded border shadow-sm mx-2">
@@ -217,7 +221,6 @@ function renderTables() {
             <div class="vr opacity-25 d-none d-sm-block" style="height: 45px;"></div>
         </div>
 
-        <!-- الإدارة الثانية -->
         <div class="text-center text-sm-start">
             <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">إدارة / محمد عطا</h6>
             <p class="text-primary fw-bold mb-0" style="font-size: 0.85rem; direction: ltr;">
@@ -249,7 +252,7 @@ function openQuickPayModal(customerName) {
   }, 500);
 }
 
-// دالة تأكيد وحفظ الدفعة النقدية من الفورم المخفي
+// دالة تأكيد وحفظ الدفعة النقدية من الفورم المخفي (محدثة لدعم التعديل اللاحق للتاريخ)
 function submitQuickPay() {
   const amount = Number(document.getElementById("modalPaidAmount").value) || 0;
   if (amount <= 0) {
@@ -257,21 +260,15 @@ function submitQuickPay() {
     return;
   }
 
-  // توليد تاريخ الدفع بدقة بالغة مع اسم اليوم والساعة والسابقة
-  const currentDateTime = new Date().toLocaleString("ar-EG", {
-    weekday: "long",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  // توليد التاريخ والوقت الحالي بصيغة الـ ISO والـ الصيغة العربي المنسقة
+  const nowStr = getLocalISOString();
+  const currentDateTime = formatCustomDate(nowStr);
 
   // إضافة حركة الدفع المباشرة للعميل
   if (dataStore[currentPayCustomerName]) {
     dataStore[currentPayCustomerName].invoices.push({
       date: currentDateTime,
+      rawDate: nowStr, // حفظ التاريخ الخام لتسهيل تعديله لاحقاً
       item: "سداد دفعة نقدية",
       qty: 0,
       price: 0,
@@ -289,7 +286,19 @@ function submitQuickPay() {
   }
 }
 
-// دالة إضافة الفاتورة أو تحديثها العادية
+// دالة تحويل التاريخ للتنسيق العربي الأنيق المعتاد في برنامجك (تاريخ فقط)
+function formatCustomDate(inputDateTime) {
+  let dateObj = inputDateTime ? new Date(inputDateTime) : new Date();
+  
+  return dateObj.toLocaleString("ar-EG", {
+    weekday: "long",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+}
+
+// دالة إضافة الفاتورة أو تحديثها (محدثة بالكامل لدعم تصفير وإعادة تهيئة نوع الحقل لـ text)
 function addInvoice(event) {
   event.preventDefault();
 
@@ -299,28 +308,25 @@ function addInvoice(event) {
   const qty = Number(document.getElementById("itemQty").value) || 0;
   const price = Number(document.getElementById("unitPrice").value) || 0;
   const paid = Number(document.getElementById("paidAmount").value) || 0;
+  const customDateValue = document.getElementById("invoiceCustomDate").value;
 
   if (!name || !code || !item) return;
 
   const taken = qty * price;
 
-  const currentDateTime = new Date().toLocaleString("ar-EG", {
-    weekday: "long",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
   if (editCustomer !== null && editIndex !== null) {
-    const oldDate =
-      dataStore[editCustomer].invoices[editIndex].date || currentDateTime;
+    // [حالة التعديل]
+    const oldDate = dataStore[editCustomer].invoices[editIndex].date;
+    const oldRawDate = dataStore[editCustomer].invoices[editIndex].rawDate;
+
+    // إذا اختار الأدمن تاريخ جديد نغيره، وإلا نحتفظ بالتاريخ والوقت القديمين
+    const finalDate = customDateValue ? formatCustomDate(customDateValue) : oldDate;
+    const finalRawDate = customDateValue ? customDateValue : oldRawDate;
 
     dataStore[editCustomer].code = code;
     dataStore[editCustomer].invoices[editIndex] = {
-      date: oldDate,
+      date: finalDate,
+      rawDate: finalRawDate, // تحديث أو حفظ التاريخ الخام
       item,
       qty,
       price,
@@ -335,12 +341,17 @@ function addInvoice(event) {
     submitBtn.className = "btn btn-primary btn-sm w-100 font-weight-bold";
     document.getElementById("cancelEditBtn").classList.add("d-none");
   } else {
+    // [حالة حركة جديدة]
+    const finalDate = customDateValue ? formatCustomDate(customDateValue) : formatCustomDate(getLocalISOString());
+    const finalRawDate = customDateValue || getLocalISOString(); // إذا لم يحدد تاريخ يدوي نأخذ اللحظة الحالية
+
     if (!dataStore[name]) {
       dataStore[name] = { code: code, invoices: [] };
     }
     dataStore[name].code = code;
     dataStore[name].invoices.push({
-      date: currentDateTime,
+      date: finalDate,
+      rawDate: finalRawDate, // تخزين التاريخ الخام للحركات الجديدة
       item,
       qty,
       price,
@@ -351,8 +362,14 @@ function addInvoice(event) {
 
   localStorage.setItem("invoiceDataStore", JSON.stringify(dataStore));
   renderTables();
+  
+  // تصفير وإعادة ضبط الفورم بالكامل وخاصة خانة التاريخ
   document.getElementById("invoiceForm").reset();
   document.getElementById("itemQty").value = 1;
+  
+  const dateInput = document.getElementById("invoiceCustomDate");
+  dateInput.type = "text"; // إرجاع النوع لنص حتى لا يظهر ميعاد تلقائي فارغ
+  dateInput.value = "";
 }
 
 function autoFillCustomerByCode() {
@@ -373,6 +390,7 @@ function autoFillCustomerByName() {
   }
 }
 
+// دالة زر التعديل ✏️ (محدثة لملء خانة التاريخ تلقائياً بالتاريخ المختار مسبقاً)
 function editRow(customerName, index) {
   const record = dataStore[customerName].invoices[index];
 
@@ -383,23 +401,36 @@ function editRow(customerName, index) {
   document.getElementById("unitPrice").value = record.price || "";
   document.getElementById("paidAmount").value = record.paid || "";
 
+  if (record.rawDate) {
+    const dateInput = document.getElementById("invoiceCustomDate");
+    dateInput.type = "date"; // تحويل النوع إلى تاريخ ليقرأ القيمة المرجعة بشكل صحيح
+    dateInput.value = record.rawDate;
+  } else {
+    document.getElementById("invoiceCustomDate").type = "text";
+    document.getElementById("invoiceCustomDate").value = "";
+  }
+
   editCustomer = customerName;
   editIndex = index;
 
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.innerHTML = "💾 تحديث الحركة الحالية";
-  submitBtn.className =
-    "btn btn-warning btn-sm w-100 font-weight-bold text-dark";
+  submitBtn.className = "btn btn-warning btn-sm w-100 font-weight-bold text-dark";
   document.getElementById("cancelEditBtn").classList.remove("d-none");
 
   document.getElementById("invoiceForm").scrollIntoView({ behavior: "smooth" });
 }
 
+// دالة إلغاء التعديل وتصفير الحقول (محدثة لتهيئة خانة التاريخ وإخفاء الـ placeholder المزعج)
 function cancelEdit() {
   editCustomer = null;
   editIndex = null;
   document.getElementById("invoiceForm").reset();
   document.getElementById("itemQty").value = 1;
+  
+  const dateInput = document.getElementById("invoiceCustomDate");
+  dateInput.type = "text"; // إرجاع النوع لنص ليبقى المودال والتيبل منسقين
+  dateInput.value = ""; 
 
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.innerHTML = "+ حفظ الحركة";
