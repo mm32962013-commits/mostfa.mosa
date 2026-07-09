@@ -680,10 +680,12 @@ async function captureScreenshot(cardId, customerName) {
   // تاريخ اليوم لتسمية الملفات
   const today = new Date().toLocaleDateString("ar-EG").replace(/\//g, "-");
 
-  // دالة مساعدة لالتقاط الصورة وتحميلها (أصبحت منفصلة لتكرارها)
+  // دالة مساعدة لالتقاط الصورة وتحميلها
   async function saveCanvas(targetElement, fileName) {
     // إخفاء أزرار التحكم والأكشن مؤقتاً في النسخة الحالية
-    const actionElements = targetElement.querySelectorAll(".action-column, button, .dynamic-screenshot-btn");
+    const actionElements = targetElement.querySelectorAll(
+      ".action-column, button, .dynamic-screenshot-btn",
+    );
     actionElements.forEach((el) => (el.style.visibility = "hidden"));
 
     try {
@@ -701,7 +703,7 @@ async function captureScreenshot(cardId, customerName) {
     }
   }
 
-  // 3️⃣ التحقق: لو الحساب صغير (10 سطور أو أقل) يصوره مرة واحدة علطول
+  // 3️⃣ التحقق: لو الحساب صغير (10 سطور أو أقل) يصوره مرة واحدة علطول وبشكل كامل
   if (allRows.length <= chunkSize) {
     await saveCanvas(element, `كشف_حساب_${customerName}_${today}.png`);
     return;
@@ -718,7 +720,7 @@ async function captureScreenshot(cardId, customerName) {
     // إنشاء نسخة طبق الأصل من الكارت في الخلفية (Clone)
     const cloneCard = element.cloneNode(true);
 
-    // ضبط استايل النسخة عشان تترسم صح في الخلفية من غير ما تظهر وتلغبط الشاشة
+    // ضبط استايل النسخة الوهمية
     cloneCard.style.position = "absolute";
     cloneCard.style.top = "0";
     cloneCard.style.left = "-9999px";
@@ -732,14 +734,29 @@ async function captureScreenshot(cardId, customerName) {
       cloneTbody.appendChild(row.cloneNode(true));
     });
 
-    // إضافة ترقيم الصفحات في الهيدر عشان العميل يعرف (جزء 1 من 3 مثلاً)
+    // ✨ التعديل المطلوب: إخفاء المجاميع والتوقيعات من كل الأجزاء ما عدا الجزء الأخير
+    const isLastPart = i === totalParts - 1;
+    if (!isLastPart) {
+      // حذف سطر حركات اليوم والمجموع الكلي من هذا الجزء
+      const tfoot = cloneCard.querySelector("tfoot");
+      if (tfoot) tfoot.remove();
+
+      // حذف منطقة التوقيعات وأرقام الإدارة من هذا الجزء
+      const footerArea = cloneCard.querySelector(".footer-signature-area");
+      if (footerArea) footerArea.remove();
+    }
+
+    // إضافة ترقيم الصفحات في الهيدر (جزء 1 من 3 مثلاً)
     const headerTitle = cloneCard.querySelector(".card-header h5");
     if (headerTitle) {
       headerTitle.innerHTML += ` <span class="badge bg-secondary ms-2 fs-7" style="font-size:0.75rem;">جزء ${i + 1} من ${totalParts}</span>`;
     }
 
     // تصوير الجزء الحالي وتحميله تلقائياً
-    await saveCanvas(cloneCard, `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`);
+    await saveCanvas(
+      cloneCard,
+      `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`,
+    );
 
     // مسح النسخة الوهمية من الـ DOM لتخفيف الذاكرة
     cloneCard.remove();
