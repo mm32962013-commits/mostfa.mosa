@@ -764,3 +764,5 @@ async function captureScreenshot(cardId, customerName) {
 }
 // التشغيل الافتراضي عند فتح الصفحة
 renderTables();
+
+
