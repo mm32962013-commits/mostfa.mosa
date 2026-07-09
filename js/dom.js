@@ -30,10 +30,6 @@ function formalizeDataStore() {
   }
 }
 formalizeDataStore();
-
-// دالة عرض ورسم الجداول بالـ Bootstrap مع إضافة سطر المجاميع وحساب رصيد الحركة المفردة
-// دالة عرض ورسم الجداول بالـ Bootstrap مع إضافة سطر المجاميع وسطر "حركات اليوم / آخر تاريخ"
-// دالة عرض ورسم الجداول بالـ Bootstrap مع إضافة (لوحة يومية النظام العامة) وسطور المجاميع
 function renderTables() {
   const container = document.getElementById("customersContainer");
   container.innerHTML = "";
@@ -44,12 +40,9 @@ function renderTables() {
   }
 
   let cardCounter = 0;
-  // جلب تاريخ اليوم المنسق للمقارنة الصحيحة
   const todayFormatted = formatCustomDate(getLocalISOString());
 
-  // ==========================================
   // 1️⃣ حساب إجمالي حركات اليوم للنظام بالكامل (اليومية العامة)
-  // ==========================================
   let globalTodayTaken = 0;
   let globalTodayPaid = 0;
   let globalTodayOperations = 0;
@@ -66,7 +59,6 @@ function renderTables() {
             day: "numeric",
           });
 
-        // إذا كانت الحركة تخص اليوم الحالي، نجمعها في اليومية العامة
         if (invoiceDate === todayFormatted) {
           let qty = Number(invoice.qty) || 0;
           let price = Number(invoice.price) || Number(invoice.taken) || 0;
@@ -78,9 +70,7 @@ function renderTables() {
     }
   }
 
-  // ==========================================
   // 2️⃣ رسم كارت إجمالي حركات اليوم (اليومية العامة) في أعلى الحسابات
-  // ==========================================
   let globalDashboardHtml = `
     <div class="col-12 mb-4">
       <div class="card border-0 shadow-sm text-white rounded-3" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
@@ -110,12 +100,9 @@ function renderTables() {
     </div>
   `;
 
-  // إضافة كارت اليومية أول شيء في الحاوية
   container.innerHTML += globalDashboardHtml;
 
-  // ==========================================
-  // 3️⃣ بناء الجداول الفردية للعملاء كالمعتاد
-  // ==========================================
+  // 3️⃣ بناء الجداول الفردية للعملاء
   for (const customerName in dataStore) {
     cardCounter++;
     const customerData = dataStore[customerName];
@@ -149,7 +136,6 @@ function renderTables() {
       totalTaken += calculatedTaken;
       totalPaid += rowPaid;
 
-      // سداد دفعة نقدية فقط
       if (calculatedTaken === 0 && rowPaid > 0) {
         rowsHtml += `
             <tr class="table-move table-success-subtle">
@@ -169,20 +155,9 @@ function renderTables() {
             </tr>
         `;
       } else {
-        // حركة بيع عادية
         let currentBalance = calculatedTaken - rowPaid;
-        let balanceColor =
-          currentBalance > 0
-            ? "text-danger fw-bold"
-            : currentBalance < 0
-              ? "text-success fw-bold"
-              : "text-muted";
-        let balanceText =
-          currentBalance > 0
-            ? `${currentBalance} ج.m`
-            : currentBalance < 0
-              ? `${Math.abs(currentBalance)} ج.م (زيادة)`
-              : "خ خالص ✨";
+        let balanceColor = currentBalance > 0 ? "text-danger fw-bold" : currentBalance < 0 ? "text-success fw-bold" : "text-muted";
+        let balanceText = currentBalance > 0 ? `${currentBalance} ج.م` : currentBalance < 0 ? `${Math.abs(currentBalance)} ج.م (زيادة)` : "خ خالص ✨";
 
         rowsHtml += `
             <tr class="table-move">
@@ -204,7 +179,6 @@ function renderTables() {
       }
     });
 
-    // حساب مجموع حركات هذا العميل لليوم الحالي (أو لآخر تاريخ مسجل عنده)
     let targetDate = todayFormatted;
     let dateLabel = "حركات الـيـوم:";
 
@@ -224,7 +198,7 @@ function renderTables() {
           year: "numeric",
           month: "numeric",
           day: "numeric",
-        });
+          });
       if (invoiceDate === targetDate) {
         let qty = Number(invoice.qty) || 0;
         let price = Number(invoice.price) || Number(invoice.taken) || 0;
@@ -234,45 +208,15 @@ function renderTables() {
     });
 
     let dailyBalance = dailyTaken - dailyPaid;
-    let dailyBalanceText =
-      dailyBalance > 0
-        ? `${dailyBalance} ج.م (مطلوب)`
-        : dailyBalance < 0
-          ? `${Math.abs(dailyBalance)} ج.م (زيادة)`
-          : "متوازن 🤝";
-    let dailyBalanceColor =
-      dailyBalance > 0
-        ? "text-danger"
-        : dailyBalance < 0
-          ? "text-success"
-          : "text-muted";
+    let dailyBalanceText = dailyBalance > 0 ? `${dailyBalance} ج.م (مطلوب)` : dailyBalance < 0 ? `${Math.abs(dailyBalance)} ج.م (زيادة)` : "متوازن 🤝";
+    let dailyBalanceColor = dailyBalance > 0 ? "text-danger" : dailyBalance < 0 ? "text-success" : "text-muted";
 
     let finalBalance = totalTaken - totalPaid;
-    let badgeClass =
-      finalBalance > 0
-        ? "bg-danger-subtle text-danger border-danger"
-        : finalBalance < 0
-          ? "bg-success-subtle text-success border-success"
-          : "bg-light text-secondary border-secondary";
-    let finalBalanceText =
-      finalBalance > 0
-        ? `متبقي عليه: ${finalBalance} ج.م`
-        : finalBalance < 0
-          ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م`
-          : "الحساب خالص ✨";
+    let badgeClass = finalBalance > 0 ? "bg-danger-subtle text-danger border-danger" : finalBalance < 0 ? "bg-success-subtle text-success border-success" : "bg-light text-secondary border-secondary";
+    let finalBalanceText = finalBalance > 0 ? `متبقي عليه: ${finalBalance} ج.م` : finalBalance < 0 ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م` : "الحساب خالص ✨";
 
-    let finalRowBalanceColor =
-      finalBalance > 0
-        ? "table-danger text-danger fw-bold"
-        : finalBalance < 0
-          ? "table-success text-success fw-bold"
-          : "text-muted fw-bold";
-    let finalRowBalanceText =
-      finalBalance > 0
-        ? `${finalBalance} (عليه)`
-        : finalBalance < 0
-          ? `${Math.abs(finalBalance)} (ليه)`
-          : "خالص";
+    let finalRowBalanceColor = finalBalance > 0 ? "table-danger text-danger fw-bold" : finalBalance < 0 ? "table-success text-success fw-bold" : "text-muted fw-bold";
+    let finalRowBalanceText = finalBalance > 0 ? `${finalBalance} (عليه)` : finalBalance < 0 ? `${Math.abs(finalBalance)} (ليه)` : "خالص";
 
     const colDiv = document.createElement("div");
     colDiv.className = "col-12 customer-card";
@@ -309,17 +253,21 @@ function renderTables() {
                             ${rowsHtml}
                         </tbody>
                         <tfoot class="table-light border-top text-center fw-bold">
-                            <!-- مجموع حركات اليوم / أو آخر تاريخ للعميل الحالي -->
                             <tr class="align-middle table-warning-subtle text-dark" style="background-color: #fffbeb;">
-                                <td colspan="4" class="text-warning-emphasis py-2 text-end pe-4" style="font-size: 0.85rem;">${dateLabel}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-warning-emphasis py-2 text-end pe-3" style="font-size: 0.85rem;">${dateLabel}</td>
                                 <td class="text-danger py-2">${dailyTaken > 0 ? dailyTaken + " ج.م" : "-"}</td>
                                 <td class="text-success py-2">${dailyPaid > 0 ? dailyPaid + " ج.م" : "-"}</td>
                                 <td class="${dailyBalanceColor} py-2">${dailyBalanceText}</td>
                                 <td class="action-column"></td>
                             </tr>
-                            <!-- المجموع الكلي الثابت للعميل -->
                             <tr class="align-middle border-top">
-                                <td colspan="4" class="text-secondary py-3 text-end pe-4">المجموع الـكـلـي:</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-secondary py-3 text-end pe-3">المجموع الـكـلـي:</td>
                                 <td class="text-danger text-decoration-underline py-3">${totalTaken} ج.م</td>
                                 <td class="text-success text-decoration-underline py-3">${totalPaid} ج.م</td>
                                 <td class="${finalRowBalanceColor} py-3">${finalRowBalanceText}</td>
@@ -354,7 +302,6 @@ function renderTables() {
     container.appendChild(colDiv);
   }
 }
-
 // دالة فتح الفورم المخفي (النافذة المنبثقة) لتسجيل الدفع
 function openQuickPayModal(customerName) {
   currentPayCustomerName = customerName;
@@ -683,9 +630,7 @@ async function captureScreenshot(cardId, customerName) {
   // دالة مساعدة لالتقاط الصورة وتحميلها
   async function saveCanvas(targetElement, fileName) {
     // إخفاء أزرار التحكم والأكشن مؤقتاً في النسخة الحالية
-    const actionElements = targetElement.querySelectorAll(
-      ".action-column, button, .dynamic-screenshot-btn",
-    );
+    const actionElements = targetElement.querySelectorAll(".action-column, button, .dynamic-screenshot-btn");
     actionElements.forEach((el) => (el.style.visibility = "hidden"));
 
     try {
@@ -735,7 +680,7 @@ async function captureScreenshot(cardId, customerName) {
     });
 
     // ✨ التعديل المطلوب: إخفاء المجاميع والتوقيعات من كل الأجزاء ما عدا الجزء الأخير
-    const isLastPart = i === totalParts - 1;
+    const isLastPart = (i === totalParts - 1);
     if (!isLastPart) {
       // حذف سطر حركات اليوم والمجموع الكلي من هذا الجزء
       const tfoot = cloneCard.querySelector("tfoot");
@@ -753,10 +698,7 @@ async function captureScreenshot(cardId, customerName) {
     }
 
     // تصوير الجزء الحالي وتحميله تلقائياً
-    await saveCanvas(
-      cloneCard,
-      `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`,
-    );
+    await saveCanvas(cloneCard, `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`);
 
     // مسح النسخة الوهمية من الـ DOM لتخفيف الذاكرة
     cloneCard.remove();
@@ -764,5 +706,3 @@ async function captureScreenshot(cardId, customerName) {
 }
 // التشغيل الافتراضي عند فتح الصفحة
 renderTables();
-
-
