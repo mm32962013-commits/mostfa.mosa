@@ -660,48 +660,90 @@ function importBackup(event) {
   reader.readAsText(file);
   event.target.value = "";
 }
-function captureScreenshot(cardId, customerName) {
+async function captureScreenshot(cardId, customerName) {
   const element = document.getElementById(cardId);
-
   if (!element) return;
 
-  // 1️⃣ خيارات متقدمة لرفع الجودة ومنع البكسلة تماماً
+  // 1️⃣ خيارات الجودة العالية لمنع البكسلة تماماً
   const options = {
-    scale: 3, // ضرب الجودة في 3 (لو الشاشة عادية هيخليها HD ورأسية حادة جداً)
-    useCORS: true, // لدعم تحميل الصور والشعارات بشكل سليم
+    scale: 3, // جودة HD حادة جداً
+    useCORS: true,
     allowTaint: true,
-    backgroundColor: "#ffffff", // إجبار الخلفية تكون بيضاء نقية
+    backgroundColor: "#ffffff",
     logging: false,
   };
 
-  // 2️⃣ إخفاء أزرار التحكم والأكشن مؤقتاً عشان متبوظش شكل الفاتورة
-  const actionElements = element.querySelectorAll(
-    ".action-column, button, .dynamic-screenshot-btn",
-  );
-  actionElements.forEach((el) => (el.style.visibility = "hidden"));
+  // 2️⃣ جلب جميع السطور الفردية من الـ tbody
+  const allRows = Array.from(element.querySelectorAll("tbody tr"));
+  const chunkSize = 10; // عدد السطور في كل صورة
 
-  // 3️⃣ التقاط الصورة بالجودة الجديدة
-  html2canvas(element, options)
-    .then((canvas) => {
-      // إعادة إظهار الأزرار بعد التقاط الصورة
-      actionElements.forEach((el) => (el.style.visibility = "visible"));
+  // تاريخ اليوم لتسمية الملفات
+  const today = new Date().toLocaleDateString("ar-EG").replace(/\//g, "-");
 
-      // تحويل الكانفاس لصورة وتحميلها
+  // دالة مساعدة لالتقاط الصورة وتحميلها (أصبحت منفصلة لتكرارها)
+  async function saveCanvas(targetElement, fileName) {
+    // إخفاء أزرار التحكم والأكشن مؤقتاً في النسخة الحالية
+    const actionElements = targetElement.querySelectorAll(".action-column, button, .dynamic-screenshot-btn");
+    actionElements.forEach((el) => (el.style.visibility = "hidden"));
+
+    try {
+      const canvas = await html2canvas(targetElement, options);
       const image = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = image;
-
-      // تسمية الملف باسم العميل وتاريخ اليوم
-      const today = new Date().toLocaleDateString("ar-EG").replace(/\//g, "-");
-      link.download = `كشف_حساب_${customerName}_${today}.png`;
-
+      link.download = fileName;
       link.click();
-    })
-    .catch((err) => {
-      console.error("حدث خطأ أثناء حفظ الصورة:", err);
-      // احتياطاً: إعادة إظهار الأزرار في حال حدوث خطأ
+    } catch (err) {
+      console.error("حدث خطأ أثناء التقاط الصورة:", err);
+    } finally {
+      // إعادة إظهار الأزرار
       actionElements.forEach((el) => (el.style.visibility = "visible"));
+    }
+  }
+
+  // 3️⃣ التحقق: لو الحساب صغير (10 سطور أو أقل) يصوره مرة واحدة علطول
+  if (allRows.length <= chunkSize) {
+    await saveCanvas(element, `كشف_حساب_${customerName}_${today}.png`);
+    return;
+  }
+
+  // 4️⃣ لو السطور أكتر من 10، هيبدأ التقسيم السحري هنا
+  const totalParts = Math.ceil(allRows.length / chunkSize);
+
+  for (let i = 0; i < totalParts; i++) {
+    const startRow = i * chunkSize;
+    const endRow = startRow + chunkSize;
+    const chunkRows = allRows.slice(startRow, endRow);
+
+    // إنشاء نسخة طبق الأصل من الكارت في الخلفية (Clone)
+    const cloneCard = element.cloneNode(true);
+
+    // ضبط استايل النسخة عشان تترسم صح في الخلفية من غير ما تظهر وتلغبط الشاشة
+    cloneCard.style.position = "absolute";
+    cloneCard.style.top = "0";
+    cloneCard.style.left = "-9999px";
+    cloneCard.style.width = element.offsetWidth + "px"; // الحفاظ على نفس العرض المتناسق
+    document.body.appendChild(cloneCard);
+
+    // تنظيف جدول النسخة ووضع الـ 10 سطور الخاصة بالجزء الحالي فقط
+    const cloneTbody = cloneCard.querySelector("tbody");
+    cloneTbody.innerHTML = "";
+    chunkRows.forEach((row) => {
+      cloneTbody.appendChild(row.cloneNode(true));
     });
+
+    // إضافة ترقيم الصفحات في الهيدر عشان العميل يعرف (جزء 1 من 3 مثلاً)
+    const headerTitle = cloneCard.querySelector(".card-header h5");
+    if (headerTitle) {
+      headerTitle.innerHTML += ` <span class="badge bg-secondary ms-2 fs-7" style="font-size:0.75rem;">جزء ${i + 1} من ${totalParts}</span>`;
+    }
+
+    // تصوير الجزء الحالي وتحميله تلقائياً
+    await saveCanvas(cloneCard, `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`);
+
+    // مسح النسخة الوهمية من الـ DOM لتخفيف الذاكرة
+    cloneCard.remove();
+  }
 }
 // التشغيل الافتراضي عند فتح الصفحة
 renderTables();
