@@ -109,7 +109,7 @@ function renderTables() {
       </div>
     </div>
   `;
-  
+
   // إضافة كارت اليومية أول شيء في الحاوية
   container.innerHTML += globalDashboardHtml;
 
@@ -171,8 +171,18 @@ function renderTables() {
       } else {
         // حركة بيع عادية
         let currentBalance = calculatedTaken - rowPaid;
-        let balanceColor = currentBalance > 0 ? "text-danger fw-bold" : currentBalance < 0 ? "text-success fw-bold" : "text-muted";
-        let balanceText = currentBalance > 0 ? `${currentBalance} ج.m` : currentBalance < 0 ? `${Math.abs(currentBalance)} ج.م (زيادة)` : "خ خالص ✨";
+        let balanceColor =
+          currentBalance > 0
+            ? "text-danger fw-bold"
+            : currentBalance < 0
+              ? "text-success fw-bold"
+              : "text-muted";
+        let balanceText =
+          currentBalance > 0
+            ? `${currentBalance} ج.m`
+            : currentBalance < 0
+              ? `${Math.abs(currentBalance)} ج.م (زيادة)`
+              : "خ خالص ✨";
 
         rowsHtml += `
             <tr class="table-move">
@@ -207,7 +217,14 @@ function renderTables() {
     let dailyPaid = 0;
 
     customerData.invoices.forEach((invoice) => {
-      let invoiceDate = invoice.date || new Date().toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "numeric", day: "numeric" });
+      let invoiceDate =
+        invoice.date ||
+        new Date().toLocaleDateString("ar-EG", {
+          weekday: "long",
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        });
       if (invoiceDate === targetDate) {
         let qty = Number(invoice.qty) || 0;
         let price = Number(invoice.price) || Number(invoice.taken) || 0;
@@ -217,15 +234,45 @@ function renderTables() {
     });
 
     let dailyBalance = dailyTaken - dailyPaid;
-    let dailyBalanceText = dailyBalance > 0 ? `${dailyBalance} ج.م (مطلوب)` : dailyBalance < 0 ? `${Math.abs(dailyBalance)} ج.م (زيادة)` : "متوازن 🤝";
-    let dailyBalanceColor = dailyBalance > 0 ? "text-danger" : dailyBalance < 0 ? "text-success" : "text-muted";
+    let dailyBalanceText =
+      dailyBalance > 0
+        ? `${dailyBalance} ج.م (مطلوب)`
+        : dailyBalance < 0
+          ? `${Math.abs(dailyBalance)} ج.م (زيادة)`
+          : "متوازن 🤝";
+    let dailyBalanceColor =
+      dailyBalance > 0
+        ? "text-danger"
+        : dailyBalance < 0
+          ? "text-success"
+          : "text-muted";
 
     let finalBalance = totalTaken - totalPaid;
-    let badgeClass = finalBalance > 0 ? "bg-danger-subtle text-danger border-danger" : finalBalance < 0 ? "bg-success-subtle text-success border-success" : "bg-light text-secondary border-secondary";
-    let finalBalanceText = finalBalance > 0 ? `متبقي عليه: ${finalBalance} ج.م` : finalBalance < 0 ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م` : "الحساب خالص ✨";
+    let badgeClass =
+      finalBalance > 0
+        ? "bg-danger-subtle text-danger border-danger"
+        : finalBalance < 0
+          ? "bg-success-subtle text-success border-success"
+          : "bg-light text-secondary border-secondary";
+    let finalBalanceText =
+      finalBalance > 0
+        ? `متبقي عليه: ${finalBalance} ج.م`
+        : finalBalance < 0
+          ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م`
+          : "الحساب خالص ✨";
 
-    let finalRowBalanceColor = finalBalance > 0 ? "table-danger text-danger fw-bold" : finalBalance < 0 ? "table-success text-success fw-bold" : "text-muted fw-bold";
-    let finalRowBalanceText = finalBalance > 0 ? `${finalBalance} (عليه)` : finalBalance < 0 ? `${Math.abs(finalBalance)} (ليه)` : "خالص";
+    let finalRowBalanceColor =
+      finalBalance > 0
+        ? "table-danger text-danger fw-bold"
+        : finalBalance < 0
+          ? "table-success text-success fw-bold"
+          : "text-muted fw-bold";
+    let finalRowBalanceText =
+      finalBalance > 0
+        ? `${finalBalance} (عليه)`
+        : finalBalance < 0
+          ? `${Math.abs(finalBalance)} (ليه)`
+          : "خالص";
 
     const colDiv = document.createElement("div");
     colDiv.className = "col-12 customer-card";
@@ -613,39 +660,48 @@ function importBackup(event) {
   reader.readAsText(file);
   event.target.value = "";
 }
+function captureScreenshot(cardId, customerName) {
+  const element = document.getElementById(cardId);
 
-function captureScreenshot(elementId, customerName) {
-  const element = document.getElementById(elementId);
   if (!element) return;
 
-  const screenshotBtn = element.querySelector(".dynamic-screenshot-btn");
-  const actionColumns = element.querySelectorAll(".action-column");
+  // 1️⃣ خيارات متقدمة لرفع الجودة ومنع البكسلة تماماً
+  const options = {
+    scale: 3, // ضرب الجودة في 3 (لو الشاشة عادية هيخليها HD ورأسية حادة جداً)
+    useCORS: true, // لدعم تحميل الصور والشعارات بشكل سليم
+    allowTaint: true,
+    backgroundColor: "#ffffff", // إجبار الخلفية تكون بيضاء نقية
+    logging: false,
+  };
 
-  if (screenshotBtn) screenshotBtn.style.visibility = "hidden";
-  actionColumns.forEach((col) => (col.style.visibility = "hidden"));
+  // 2️⃣ إخفاء أزرار التحكم والأكشن مؤقتاً عشان متبوظش شكل الفاتورة
+  const actionElements = element.querySelectorAll(
+    ".action-column, button, .dynamic-screenshot-btn",
+  );
+  actionElements.forEach((el) => (el.style.visibility = "hidden"));
 
-  html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-  })
+  // 3️⃣ التقاط الصورة بالجودة الجديدة
+  html2canvas(element, options)
     .then((canvas) => {
+      // إعادة إظهار الأزرار بعد التقاط الصورة
+      actionElements.forEach((el) => (el.style.visibility = "visible"));
+
+      // تحويل الكانفاس لصورة وتحميلها
       const image = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-
-      link.download = `فاتورة_العميل_${customerName}.png`;
       link.href = image;
-      link.click();
 
-      if (screenshotBtn) screenshotBtn.style.visibility = "visible";
-      actionColumns.forEach((col) => (col.style.visibility = "visible"));
+      // تسمية الملف باسم العميل وتاريخ اليوم
+      const today = new Date().toLocaleDateString("ar-EG").replace(/\//g, "-");
+      link.download = `كشف_حساب_${customerName}_${today}.png`;
+
+      link.click();
     })
     .catch((err) => {
-      console.error("خطأ أثناء حفظ الصورة:", err);
-      if (screenshotBtn) screenshotBtn.style.visibility = "visible";
-      actionColumns.forEach((col) => (col.style.visibility = "visible"));
+      console.error("حدث خطأ أثناء حفظ الصورة:", err);
+      // احتياطاً: إعادة إظهار الأزرار في حال حدوث خطأ
+      actionElements.forEach((el) => (el.style.visibility = "visible"));
     });
 }
-
 // التشغيل الافتراضي عند فتح الصفحة
 renderTables();
