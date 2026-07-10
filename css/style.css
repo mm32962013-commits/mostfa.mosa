@@ -7,3 +7,31 @@ body {
   border: 1px solid #e3e6f0;
   box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
 }
+@media print {
+    /* 🛠️ إبقاء الخلفية بيضاء فقط لحماية الطباعة مع استرجاع ألوان الخطوط الأصلية */
+    .table-success-subtle,
+    .payment-row {
+      background-color: #ffffff !important;
+    }
+    
+    .table-success-subtle td,
+    .payment-row td {
+      background-color: #ffffff !important;
+      border: 1px solid #dee2e6 !important;
+    }
+
+    /* 🟢 استرجاع اللون الأخضر الأصلي للبوتستراب للنصوص والكلمات */
+    .text-success, 
+    .table-success-subtle strong {
+      color: #198754 !important; /* لون البوتستراب الأخضر الصريح */
+    }
+
+    /* تنسيق التاريخ (البادج) عشان يظهر بخلفية بيضاء خفيفة وحدود وكتابة باللون الأخضر */
+    .table-success-subtle .badge,
+    .payment-row .badge {
+      background-color: #f8f9fa !important;
+      color: #198754 !important;
+      border: 1px solid #198754 !important;
+      padding: 4px 8px !important;
+    }
+}

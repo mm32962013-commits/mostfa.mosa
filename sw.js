@@ -1,6 +1,6 @@
-const CACHE_NAME = 'invoice-app-v3'; // رفعنا الإصدار لضمان تحديث المتصفح فوراً
+const CACHE_NAME = 'invoice-app-v4'; // 👈 رفعنا الإصدار لـ v4 لضمان تحديث المتصفح فوراً وحذف الكاش القديم
 
-// تحويل المسارات لنسبية (بدون / في الأول) لضمان اشتغالها على جيت هاب أو أي استضافة
+// المسارات النظيفة بعد حذف مكتبة التصوير
 const ASSETS = [
   './', 
   'index.html',
@@ -8,10 +8,9 @@ const ASSETS = [
   'css/all.min.css',
   'css/style.css',
   'js/bootstrap.bundle.min.js',
-  'js/html2canvas.min.js',
-  'js/dom.js',
+  'js/dom.js', // 👈 تم حذف سطر html2canvas من هنا بنجاح
   'image/مصطفي موسي.png',
-  'image/invoice.png', // 👈 ضفنا الأيقونة هنا عشان المتصفح يلاقيها ويوافق على التثبيت
+  'image/invoice.png', 
   'manifest.json'
 ];
 

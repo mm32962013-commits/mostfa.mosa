@@ -30,6 +30,7 @@ function formalizeDataStore() {
   }
 }
 formalizeDataStore();
+
 function renderTables() {
   const container = document.getElementById("customersContainer");
   container.innerHTML = "";
@@ -42,7 +43,7 @@ function renderTables() {
   let cardCounter = 0;
   const todayFormatted = formatCustomDate(getLocalISOString());
 
-  // 1️⃣ حساب إجمالي حركات اليوم للنظام بالكامل (اليومية العامة)
+  // 1️⃣ حساب إجمالي حركات اليوم للنظام بالكامل
   let globalTodayTaken = 0;
   let globalTodayPaid = 0;
   let globalTodayOperations = 0;
@@ -70,7 +71,7 @@ function renderTables() {
     }
   }
 
-  // 2️⃣ رسم كارت إجمالي حركات اليوم (اليومية العامة) في أعلى الحسابات
+  // 2️⃣ رسم كارت إجمالي حركات اليومية العامة
   let globalDashboardHtml = `
     <div class="col-12 mb-4">
       <div class="card border-0 shadow-sm text-white rounded-3" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
@@ -135,29 +136,45 @@ function renderTables() {
 
       totalTaken += calculatedTaken;
       totalPaid += rowPaid;
-
+      // 👇 استبدل كود الدفعة النقدية القديم بهذا الكود المنظم ليفصل الخلايا عن بعضها
       if (calculatedTaken === 0 && rowPaid > 0) {
         rowsHtml += `
-            <tr class="table-move table-success-subtle">
-                <td colspan="4" class="text-start ps-4 py-2">
-                    <span class="badge bg-success fw-bold me-2">${invoiceDate}</span>
-                    <strong class="text-success">💵 تم سداد دفعة نقدية من الحساب</strong>
-                </td>
-                <td class="text-muted fw-semibold">-</td>
-                <td class="text-success fw-bold fs-5 py-2">${rowPaid} ج.م</td>
-                <td class="text-success fw-bold py-2">دفعة ↓</td>
-                <td class="action-column">
-                    <div class="d-flex gap-1 justify-content-center">
-                        <button onclick="editRow('${customerName}', ${index})" class="btn btn-sm btn-outline-warning py-0 px-2 text-dark" title="تعديل">✏️</button>
-                        <button onclick="deleteRow('${customerName}', ${index})" class="btn btn-sm btn-outline-danger py-0 px-2" title="حذف">×</button>
-                    </div>
-                </td>
-            </tr>
-        `;
+      <tr class="table-move table-success-subtle payment-row">
+          <td><span class="badge bg-success fw-bold px-2 py-1">${invoiceDate}</span></td>
+          
+          <td colspan="3" class="text-start ps-3 text-nowrap">
+              <strong class="text-success">💵 تم سداد دفعة نقدية من الحساب</strong>
+          </td>
+          
+          <td class="text-muted fw-semibold">-</td>
+          
+          <td class="text-success fw-bold fs-5 py-2">${rowPaid} ج.م</td>
+          
+          <td class="text-success fw-bold py-2">دفعة ↓</td>
+          
+          <td class="action-column">
+              <div class="d-flex gap-1 justify-content-center">
+                  <button onclick="editRow('${customerName}', ${index})" class="btn btn-sm btn-outline-warning py-0 px-2 text-dark" title="تعديل">✏️</button>
+                  <button onclick="deleteRow('${customerName}', ${index})" class="btn btn-sm btn-outline-danger py-0 px-2" title="حذف">×</button>
+              </div>
+          </td>
+      </tr>
+  `;
       } else {
         let currentBalance = calculatedTaken - rowPaid;
-        let balanceColor = currentBalance > 0 ? "text-danger fw-bold" : currentBalance < 0 ? "text-success fw-bold" : "text-muted";
-        let balanceText = currentBalance > 0 ? `${currentBalance} ج.م` : currentBalance < 0 ? `${Math.abs(currentBalance)} ج.م (زيادة)` : "خ خالص ✨";
+        let balanceColor =
+          currentBalance > 0
+            ? "text-danger fw-bold"
+            : currentBalance < 0
+              ? "text-success fw-bold"
+              : "text-muted";
+
+        let balanceText =
+          currentBalance > 0
+            ? `${currentBalance} ج.م`
+            : currentBalance < 0
+              ? `${Math.abs(currentBalance)} ج.م (زيادة)`
+              : "خالص ✨";
 
         rowsHtml += `
             <tr class="table-move">
@@ -198,7 +215,7 @@ function renderTables() {
           year: "numeric",
           month: "numeric",
           day: "numeric",
-          });
+        });
       if (invoiceDate === targetDate) {
         let qty = Number(invoice.qty) || 0;
         let price = Number(invoice.price) || Number(invoice.taken) || 0;
@@ -208,15 +225,45 @@ function renderTables() {
     });
 
     let dailyBalance = dailyTaken - dailyPaid;
-    let dailyBalanceText = dailyBalance > 0 ? `${dailyBalance} ج.م (مطلوب)` : dailyBalance < 0 ? `${Math.abs(dailyBalance)} ج.م (زيادة)` : "متوازن 🤝";
-    let dailyBalanceColor = dailyBalance > 0 ? "text-danger" : dailyBalance < 0 ? "text-success" : "text-muted";
+    let dailyBalanceText =
+      dailyBalance > 0
+        ? `${dailyBalance} ج.م (مطلوب)`
+        : dailyBalance < 0
+          ? `${Math.abs(dailyBalance)} ج.م (زيادة)`
+          : "متوازن 🤝";
+    let dailyBalanceColor =
+      dailyBalance > 0
+        ? "text-danger"
+        : dailyBalance < 0
+          ? "text-success"
+          : "text-muted";
 
     let finalBalance = totalTaken - totalPaid;
-    let badgeClass = finalBalance > 0 ? "bg-danger-subtle text-danger border-danger" : finalBalance < 0 ? "bg-success-subtle text-success border-success" : "bg-light text-secondary border-secondary";
-    let finalBalanceText = finalBalance > 0 ? `متبقي عليه: ${finalBalance} ج.م` : finalBalance < 0 ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م` : "الحساب خالص ✨";
+    let badgeClass =
+      finalBalance > 0
+        ? "bg-danger-subtle text-danger border-danger"
+        : finalBalance < 0
+          ? "bg-success-subtle text-success border-success"
+          : "bg-light text-secondary border-secondary";
+    let finalBalanceText =
+      finalBalance > 0
+        ? `متبقي عليه: ${finalBalance} ج.م`
+        : finalBalance < 0
+          ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م`
+          : "الحساب خالص ✨";
 
-    let finalRowBalanceColor = finalBalance > 0 ? "table-danger text-danger fw-bold" : finalBalance < 0 ? "table-success text-success fw-bold" : "text-muted fw-bold";
-    let finalRowBalanceText = finalBalance > 0 ? `${finalBalance} (عليه)` : finalBalance < 0 ? `${Math.abs(finalBalance)} (ليه)` : "خالص";
+    let finalRowBalanceColor =
+      finalBalance > 0
+        ? "table-danger text-danger fw-bold"
+        : finalBalance < 0
+          ? "table-success text-success fw-bold"
+          : "text-muted fw-bold";
+    let finalRowBalanceText =
+      finalBalance > 0
+        ? `${finalBalance} (عليه)`
+        : finalBalance < 0
+          ? `${Math.abs(finalBalance)} (ليه)`
+          : "خالص";
 
     const colDiv = document.createElement("div");
     colDiv.className = "col-12 customer-card";
@@ -228,9 +275,9 @@ function renderTables() {
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <h5 class="mb-0 text-dark fw-bold">👤 [${customerCode}] - ${customerName}</h5>
-                    <button onclick="quickAdd('${customerName}', '${customerCode}')" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">+ حركة جديدة</button>
-                    <button onclick="openQuickPayModal('${customerName}')" class="btn btn-sm btn-success py-1 px-2 rounded-pill fw-semibold text-white fs-7" style="font-size: 0.8rem;">💵 دفع دفعة مالية</button>
-                    <button onclick="captureScreenshot('${currentCardId}', '${customerName}')" class="btn btn-sm btn-success py-1 px-3 rounded-pill fw-bold dynamic-screenshot-btn" style="font-size: 0.8rem;">📸 حفظ كصورة كاملة</button>
+                    <button onclick="quickAdd('${customerName}', '${customerCode}')" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-pill fw-semibold btn-action-hide" style="font-size: 0.8rem;">+ حركة جديدة</button>
+                    <button onclick="openQuickPayModal('${customerName}')" class="btn btn-sm btn-success py-1 px-2 rounded-pill fw-semibold text-white fs-7 btn-action-hide" style="font-size: 0.8rem;">💵 دفع دفعة مالية</button>
+                    <button onclick="exportInvoiceToPDF('${currentCardId}', '${customerName}')" class="btn btn-sm btn-danger py-1 px-3 rounded-pill fw-bold" style="font-size: 0.8rem;">📄 حفظ كملف PDF طباعة</button>
                 </div>
                 <span class="badge border px-3 py-2 rounded-pill ${badgeClass}">${finalBalanceText}</span>
             </div>
@@ -302,23 +349,135 @@ function renderTables() {
     container.appendChild(colDiv);
   }
 }
-// دالة فتح الفورم المخفي (النافذة المنبثقة) لتسجيل الدفع
+
+// ======================== دالة توليد الـ PDF الاحترافية الجديدة ========================
+function exportInvoiceToPDF(cardId, customerName) {
+  const element = document.getElementById(cardId);
+  if (!element) return;
+
+  // 1️⃣ إنشاء نافذة وهمية للطباعة النظيفة (Iframe) لمنع التأثير على الصفحة الحالية
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+
+  // 2️⃣ استنساخ كارت الفاتورة
+  const cloneCard = element.cloneNode(true);
+
+  // 3️⃣ كتابة مستند HTML متكامل داخل الـ Iframe يدعم أحدث معايير محركات الـ PDF للمتصفحات
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <title>كشف حساب - ${customerName}</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+      
+      <!-- 🌟 السحر هنا: استدعاء ملف الـ CSS الخارجي بتاعك عشان يقرأ الـ @media print اللي أنت ضفتها -->
+      <link rel="stylesheet" href="css/style.css">
+      
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        
+        body {
+          font-family: 'Cairo', sans-serif;
+          background-color: #ffffff !important;
+          color: #000000 !important;
+          padding: 10mm;
+        }
+
+        /* إخفاء أزرار التحكم تماماً وعمود الأكشن الحذف والتعديل */
+        .action-column, button, .btn, .btn-action-hide {
+          display: none !important;
+        }
+
+        .card {
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        /* 👑 منع تكرار الـ tfoot في الصفحات، ليظهر فقط في النهاية المطلقة */
+        tfoot {
+          display: table-row-group !important;
+        }
+
+        /* تكرار هيدر الجدول في بداية كل صفحة تلقائياً لتنظيم القراءة */
+        thead {
+          display: table-header-group !important;
+        }
+
+        /* منع انقسام السطر الواحد بمنتصفه بين الصفحات بشكل مشوه */
+        tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+        }
+
+        th, td {
+          padding: 10px 6px !important;
+          font-size: 13px !important;
+          border: 1px solid #dee2e6 !important;
+        }
+
+        /* دفع منطقة التوقيعات لتكون أسفل الجدول مباشرة في آخر صفحة فقط */
+        .footer-signature-area {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          margin-top: 30px !important;
+          border-top: 2px dashed #dee2e6 !important;
+          padding-top: 20px !important;
+        }
+
+        /* ضبط إعدادات الصفحة والهوامش لـ PDF ذكي */
+        @page {
+          size: A4;
+          margin: 15mm 10mm 15mm 10mm;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container-fluid">
+        ${cloneCard.innerHTML}
+      </div>
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  // 4️⃣ انتهاء تحميل المحتويات بالكامل ثم استدعاء أمر طباعة النظام (حفظ كـ PDF)
+  iframe.contentWindow.focus();
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    // تنظيف المستند وحذف الـ iframe من الذاكرة بعد دقيقة للحفاظ على سرعة المتصفح
+    setTimeout(() => iframe.remove(), 1000);
+  }, 750);
+}
+
+// بقية الدوال دون أي تغيير لتعمل بكفاءتها المعهودة...
 function openQuickPayModal(customerName) {
   currentPayCustomerName = customerName;
   document.getElementById("modalCustomerName").value = customerName;
   document.getElementById("modalPaidAmount").value = "";
 
-  // تشغيل المودال الخاص بـ Bootstrap
   let payModal = new bootstrap.Modal(document.getElementById("quickPayModal"));
   payModal.show();
 
-  // تركيز المؤشر داخل خانة المبلغ مباشرة
   setTimeout(() => {
     document.getElementById("modalPaidAmount").focus();
   }, 500);
 }
 
-// دالة تأكيد وحفظ الدفعة النقدية من الفورم المخفي (محدثة لدعم التعديل اللاحق للتاريخ)
 function submitQuickPay() {
   const amount = Number(document.getElementById("modalPaidAmount").value) || 0;
   if (amount <= 0) {
@@ -326,15 +485,13 @@ function submitQuickPay() {
     return;
   }
 
-  // توليد التاريخ والوقت الحالي بصيغة الـ ISO والـ الصيغة العربي المنسقة
   const nowStr = getLocalISOString();
   const currentDateTime = formatCustomDate(nowStr);
 
-  // إضافة حركة الدفع المباشرة للعميل
   if (dataStore[currentPayCustomerName]) {
     dataStore[currentPayCustomerName].invoices.push({
       date: currentDateTime,
-      rawDate: nowStr, // حفظ التاريخ الخام لتسهيل تعديله لاحقاً
+      rawDate: nowStr,
       item: "سداد دفعة نقدية",
       qty: 0,
       price: 0,
@@ -345,17 +502,14 @@ function submitQuickPay() {
     localStorage.setItem("invoiceDataStore", JSON.stringify(dataStore));
     renderTables();
 
-    // إغلاق النافذة المنبثقة بعد النجاح
     let myModalEl = document.getElementById("quickPayModal");
     let modal = bootstrap.Modal.getInstance(myModalEl);
     modal.hide();
   }
 }
 
-// دالة تحويل التاريخ للتنسيق العربي الأنيق المعتاد في برنامجك (تاريخ فقط)
 function formatCustomDate(inputDateTime) {
   let dateObj = inputDateTime ? new Date(inputDateTime) : new Date();
-
   return dateObj.toLocaleString("ar-EG", {
     weekday: "long",
     year: "numeric",
@@ -364,7 +518,6 @@ function formatCustomDate(inputDateTime) {
   });
 }
 
-// دالة إضافة الفاتورة أو تحديثها (محدثة بالكامل لدعم تصفير وإعادة تهيئة نوع الحقل لـ text)
 function addInvoice(event) {
   event.preventDefault();
 
@@ -381,11 +534,9 @@ function addInvoice(event) {
   const taken = qty * price;
 
   if (editCustomer !== null && editIndex !== null) {
-    // [حالة التعديل]
     const oldDate = dataStore[editCustomer].invoices[editIndex].date;
     const oldRawDate = dataStore[editCustomer].invoices[editIndex].rawDate;
 
-    // إذا اختار الأدمن تاريخ جديد نغيره، وإلا نحتفظ بالتاريخ والوقت القديمين
     const finalDate = customDateValue
       ? formatCustomDate(customDateValue)
       : oldDate;
@@ -394,7 +545,7 @@ function addInvoice(event) {
     dataStore[editCustomer].code = code;
     dataStore[editCustomer].invoices[editIndex] = {
       date: finalDate,
-      rawDate: finalRawDate, // تحديث أو حفظ التاريخ الخام
+      rawDate: finalRawDate,
       item,
       qty,
       price,
@@ -409,11 +560,10 @@ function addInvoice(event) {
     submitBtn.className = "btn btn-primary btn-sm w-100 font-weight-bold";
     document.getElementById("cancelEditBtn").classList.add("d-none");
   } else {
-    // [حالة حركة جديدة]
     const finalDate = customDateValue
       ? formatCustomDate(customDateValue)
       : formatCustomDate(getLocalISOString());
-    const finalRawDate = customDateValue || getLocalISOString(); // إذا لم يحدد تاريخ يدوي نأخذ اللحظة الحالية
+    const finalRawDate = customDateValue || getLocalISOString();
 
     if (!dataStore[name]) {
       dataStore[name] = { code: code, invoices: [] };
@@ -421,7 +571,7 @@ function addInvoice(event) {
     dataStore[name].code = code;
     dataStore[name].invoices.push({
       date: finalDate,
-      rawDate: finalRawDate, // تخزين التاريخ الخام للحركات الجديدة
+      rawDate: finalRawDate,
       item,
       qty,
       price,
@@ -433,12 +583,11 @@ function addInvoice(event) {
   localStorage.setItem("invoiceDataStore", JSON.stringify(dataStore));
   renderTables();
 
-  // تصفير وإعادة ضبط الفورم بالكامل وخاصة خانة التاريخ
   document.getElementById("invoiceForm").reset();
   document.getElementById("itemQty").value = 1;
 
   const dateInput = document.getElementById("invoiceCustomDate");
-  dateInput.type = "text"; // إرجاع النوع لنص حتى لا يظهر ميعاد تلقائي فارغ
+  dateInput.type = "text";
   dateInput.value = "";
 }
 
@@ -452,7 +601,6 @@ function autoFillCustomerByCode() {
   }
 }
 
-// دالة الربط التلقائي بالاسم
 function autoFillCustomerByName() {
   const nameInput = document.getElementById("clientName").value.trim();
   if (dataStore[nameInput]) {
@@ -460,7 +608,6 @@ function autoFillCustomerByName() {
   }
 }
 
-// دالة زر التعديل ✏️ (محدثة لملء خانة التاريخ تلقائياً بالتاريخ المختار مسبقاً)
 function editRow(customerName, index) {
   const record = dataStore[customerName].invoices[index];
 
@@ -473,7 +620,7 @@ function editRow(customerName, index) {
 
   if (record.rawDate) {
     const dateInput = document.getElementById("invoiceCustomDate");
-    dateInput.type = "date"; // تحويل النوع إلى تاريخ ليقرأ القيمة المرجعة بشكل صحيح
+    dateInput.type = "date";
     dateInput.value = record.rawDate;
   } else {
     document.getElementById("invoiceCustomDate").type = "text";
@@ -492,7 +639,6 @@ function editRow(customerName, index) {
   document.getElementById("invoiceForm").scrollIntoView({ behavior: "smooth" });
 }
 
-// دالة إلغاء التعديل وتصفير الحقول (محدثة لتهيئة خانة التاريخ وإخفاء الـ placeholder المزعج)
 function cancelEdit() {
   editCustomer = null;
   editIndex = null;
@@ -500,7 +646,7 @@ function cancelEdit() {
   document.getElementById("itemQty").value = 1;
 
   const dateInput = document.getElementById("invoiceCustomDate");
-  dateInput.type = "text"; // إرجاع النوع لنص ليبقى المودال والتيبل منسقين
+  dateInput.type = "text";
   dateInput.value = "";
 
   const submitBtn = document.getElementById("submitBtn");
@@ -559,10 +705,8 @@ function exportBackup() {
     "data:text/json;charset=utf-8," +
     encodeURIComponent(JSON.stringify(dataStore, null, 2));
   const downloadAnchor = document.createElement("a");
-
   downloadAnchor.setAttribute("href", dataStr);
   downloadAnchor.setAttribute("download", `ترجيع_بيانات.json`);
-
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
@@ -584,12 +728,11 @@ function importBackup(event) {
       if (typeof importedData === "object" && importedData !== null) {
         if (
           confirm(
-            "🚨 تحذير: استعادة هذه النسخة سيقوم بمسح البيانات الحالية على هذا المتصفح واستبدالها بالكامل بالملف الجديد. هل تود الاستمرار؟",
+            "🚨 تحذير: استعادة هذه النسخة سيقوم بمسح البيانات الحالية على هذا المتصفح واستبدها بالكامل بالملف الجديد. هل تود الاستمرار؟",
           )
         ) {
           dataStore = importedData;
           localStorage.setItem("invoiceDataStore", JSON.stringify(dataStore));
-
           formalizeDataStore();
           renderTables();
           alert("🎉 تم استعادة البيانات بنجاح وعرض كل فواتير العملاء الحالية!");
@@ -607,102 +750,6 @@ function importBackup(event) {
   reader.readAsText(file);
   event.target.value = "";
 }
-async function captureScreenshot(cardId, customerName) {
-  const element = document.getElementById(cardId);
-  if (!element) return;
 
-  // 1️⃣ خيارات الجودة العالية لمنع البكسلة تماماً
-  const options = {
-    scale: 3, // جودة HD حادة جداً
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-  };
-
-  // 2️⃣ جلب جميع السطور الفردية من الـ tbody
-  const allRows = Array.from(element.querySelectorAll("tbody tr"));
-  const chunkSize = 10; // عدد السطور في كل صورة
-
-  // تاريخ اليوم لتسمية الملفات
-  const today = new Date().toLocaleDateString("ar-EG").replace(/\//g, "-");
-
-  // دالة مساعدة لالتقاط الصورة وتحميلها
-  async function saveCanvas(targetElement, fileName) {
-    // إخفاء أزرار التحكم والأكشن مؤقتاً في النسخة الحالية
-    const actionElements = targetElement.querySelectorAll(".action-column, button, .dynamic-screenshot-btn");
-    actionElements.forEach((el) => (el.style.visibility = "hidden"));
-
-    try {
-      const canvas = await html2canvas(targetElement, options);
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = fileName;
-      link.click();
-    } catch (err) {
-      console.error("حدث خطأ أثناء التقاط الصورة:", err);
-    } finally {
-      // إعادة إظهار الأزرار
-      actionElements.forEach((el) => (el.style.visibility = "visible"));
-    }
-  }
-
-  // 3️⃣ التحقق: لو الحساب صغير (10 سطور أو أقل) يصوره مرة واحدة علطول وبشكل كامل
-  if (allRows.length <= chunkSize) {
-    await saveCanvas(element, `كشف_حساب_${customerName}_${today}.png`);
-    return;
-  }
-
-  // 4️⃣ لو السطور أكتر من 10، هيبدأ التقسيم السحري هنا
-  const totalParts = Math.ceil(allRows.length / chunkSize);
-
-  for (let i = 0; i < totalParts; i++) {
-    const startRow = i * chunkSize;
-    const endRow = startRow + chunkSize;
-    const chunkRows = allRows.slice(startRow, endRow);
-
-    // إنشاء نسخة طبق الأصل من الكارت في الخلفية (Clone)
-    const cloneCard = element.cloneNode(true);
-
-    // ضبط استايل النسخة الوهمية
-    cloneCard.style.position = "absolute";
-    cloneCard.style.top = "0";
-    cloneCard.style.left = "-9999px";
-    cloneCard.style.width = element.offsetWidth + "px"; // الحفاظ على نفس العرض المتناسق
-    document.body.appendChild(cloneCard);
-
-    // تنظيف جدول النسخة ووضع الـ 10 سطور الخاصة بالجزء الحالي فقط
-    const cloneTbody = cloneCard.querySelector("tbody");
-    cloneTbody.innerHTML = "";
-    chunkRows.forEach((row) => {
-      cloneTbody.appendChild(row.cloneNode(true));
-    });
-
-    // ✨ التعديل المطلوب: إخفاء المجاميع والتوقيعات من كل الأجزاء ما عدا الجزء الأخير
-    const isLastPart = (i === totalParts - 1);
-    if (!isLastPart) {
-      // حذف سطر حركات اليوم والمجموع الكلي من هذا الجزء
-      const tfoot = cloneCard.querySelector("tfoot");
-      if (tfoot) tfoot.remove();
-
-      // حذف منطقة التوقيعات وأرقام الإدارة من هذا الجزء
-      const footerArea = cloneCard.querySelector(".footer-signature-area");
-      if (footerArea) footerArea.remove();
-    }
-
-    // إضافة ترقيم الصفحات في الهيدر (جزء 1 من 3 مثلاً)
-    const headerTitle = cloneCard.querySelector(".card-header h5");
-    if (headerTitle) {
-      headerTitle.innerHTML += ` <span class="badge bg-secondary ms-2 fs-7" style="font-size:0.75rem;">جزء ${i + 1} من ${totalParts}</span>`;
-    }
-
-    // تصوير الجزء الحالي وتحميله تلقائياً
-    await saveCanvas(cloneCard, `كشف_حساب_${customerName}_جزء_${i + 1}_من_${totalParts}_${today}.png`);
-
-    // مسح النسخة الوهمية من الـ DOM لتخفيف الذاكرة
-    cloneCard.remove();
-  }
-}
 // التشغيل الافتراضي عند فتح الصفحة
 renderTables();
