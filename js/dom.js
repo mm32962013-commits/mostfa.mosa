@@ -247,7 +247,7 @@ function renderTables() {
           : "bg-light text-secondary border-secondary";
     let finalBalanceText =
       finalBalance > 0
-        ? `متبقي عليه: ${finalBalance} ج.م`
+        ? `متبقي عليه: ${finalBalance.toLocaleString("ar-EG")} ج.م`
         : finalBalance < 0
           ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م`
           : "الحساب خالص ✨";
@@ -349,121 +349,186 @@ function renderTables() {
     container.appendChild(colDiv);
   }
 }
-
-// ======================== دالة توليد الـ PDF الاحترافية الجديدة ========================
 function exportInvoiceToPDF(cardId, customerName) {
-  const element = document.getElementById(cardId);
-  if (!element) return;
+  const customerData = dataStore[customerName];
+  if (!customerData) return;
 
-  // 1️⃣ إنشاء نافذة وهمية للطباعة النظيفة (Iframe) لمنع التأثير على الصفحة الحالية
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "none";
-  document.body.appendChild(iframe);
+  let totalQty = 0;
+  let totalTaken = 0;
+  let totalPaid = 0;
 
-  const doc = iframe.contentWindow.document;
+  // 1. تجهيز صفوف الجدول مع إصلاح مشكلة التاريخ
+  let rowsHtml = customerData.invoices
+    .map((inv) => {
+      let qty = Number(inv.qty) || 0;
+      let price = Number(inv.price) || Number(inv.taken) || 0;
+      let taken = qty * price;
+      let paid = Number(inv.paid) || 0;
 
-  // 2️⃣ استنساخ كارت الفاتورة
-  const cloneCard = element.cloneNode(true);
+      totalQty += qty;
+      totalTaken += taken;
+      totalPaid += paid;
 
-  // 3️⃣ كتابة مستند HTML متكامل داخل الـ Iframe يدعم أحدث معايير محركات الـ PDF للمتصفحات
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html dir="rtl" lang="ar">
-    <head>
-      <meta charset="UTF-8">
-      <title>كشف حساب - ${customerName}</title>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-      
-      <!-- 🌟 السحر هنا: استدعاء ملف الـ CSS الخارجي بتاعك عشان يقرأ الـ @media print اللي أنت ضفتها -->
-      <link rel="stylesheet" href="css/style.css">
-      
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
-        
-        body {
-          font-family: 'Cairo', sans-serif;
-          background-color: #ffffff !important;
-          color: #000000 !important;
-          padding: 10mm;
-        }
+      // التحقق من التاريخ: لو فاضي يحط شرطة (-) عشان الجدول ميبقاش شكله غريب
+      let displayDate =
+        inv.date && String(inv.date).trim() !== "" ? inv.date : "-";
 
-        /* إخفاء أزرار التحكم تماماً وعمود الأكشن الحذف والتعديل */
-        .action-column, button, .btn, .btn-action-hide {
-          display: none !important;
-        }
+      return `
+            <tr style="page-break-inside: avoid;">
+                <!-- إضافة bdi و nowrap لمنع تداخل الأرقام مع النصوص العربية -->
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-size: 13px; white-space: nowrap;"><bdi>${displayDate}</bdi></td>
+<td style="border:1px solid #000;padding:4px;text-align:center;">
+    <span style="
+        direction:rtl;
+        display:inline-block;
+        word-spacing:2px;
+        letter-spacing:0;
+    ">
+        ${inv.item || "-"}
+    </span>
+</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px;">${qty > 0 ? qty : "-"}</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px;">${price > 0 ? price.toLocaleString("ar-EG") + " ج.م" : "-"}</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px; font-weight: bold; color: #d32f2f;">${taken > 0 ? taken.toLocaleString("ar-EG") + " ج.م" : "-"}</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px; font-weight: bold; color: #2e7d32;">${paid > 0 ? paid.toLocaleString("ar-EG") + " ج.م" : "-"}</td>
+            </tr>
+        `;
+    })
+    .join("");
 
-        .card {
-          border: none !important;
-          box-shadow: none !important;
-        }
+  let finalBalance = totalTaken - totalPaid;
+  let finalBalanceText =
+    finalBalance > 0
+      ? `متبقي عليه: ${finalBalance.toLocaleString("ar-EG")} ج.م`
+      : finalBalance < 0
+        ? `ليه طرفنا: ${Math.abs(finalBalance)} ج.م`
+        : "الحساب خالص ✨";
 
-        /* 👑 منع تكرار الـ tfoot في الصفحات، ليظهر فقط في النهاية المطلقة */
-        tfoot {
-          display: table-row-group !important;
-        }
+  // 2. تصميم الفاتورة
+  const invoiceHTML = `
+    <div style="
+        padding:16px 8px;
+        font-family:'Cairo',sans-serif;
+        direction:rtl;
+        background:#fff;
+        color:#000;
+        width:97%;
+        margin:1px 0 0 0;
+    ">
+    <div style="page-break-inside: avoid;">
+       <div style="
+    text-align:center;
+    margin:0;
+    padding:0 0 5px 0;
+    border-bottom:2px solid #000;
+">
 
-        /* تكرار هيدر الجدول في بداية كل صفحة تلقائياً لتنظيم القراءة */
-        thead {
-          display: table-header-group !important;
-        }
+    <h2 style="
+        margin:0;
+        padding:0;
+        font-size:24px;
+        line-height:1.2;
+    ">
+        كشف حساب      <b>${customerName}:</b>
+    </h2>
 
-        /* منع انقسام السطر الواحد بمنتصفه بين الصفحات بشكل مشوه */
-        tr {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
+    <p style="
+        margin:4px 0;
+        padding:0;
+        font-size:15px;
+        line-height:1.3;
+    ">
+        كود العميل: <strong>${customerData.code}</strong>
+        |
+        تاريخ الطباعة:
+        <strong>${new Date().toLocaleDateString("ar-EG")}</strong>
+    </p>
 
-        table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-        }
+    <h4 style="
+        margin:0;
+        padding:0;
+        font-size:17px;
+        line-height:1.3;
+        color:${finalBalance > 0 ? "red" : "green"};
+    ">
+        الرصيد النهائي 
+        ${finalBalanceText}
+    </h4>
 
-        th, td {
-          padding: 10px 6px !important;
-          font-size: 13px !important;
-          border: 1px solid #dee2e6 !important;
-        }
+</div>
 
-        /* دفع منطقة التوقيعات لتكون أسفل الجدول مباشرة في آخر صفحة فقط */
-        .footer-signature-area {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-          margin-top: 30px !important;
-          border-top: 2px dashed #dee2e6 !important;
-          padding-top: 20px !important;
-        }
+            <!-- إضافة table-layout: fixed وعرض محدد للأعمدة لضمان عدم خروج الجدول عن مساره -->
+           <table style="
+width:98%;
+border-collapse:collapse;
+margin-top:3px;
+table-layout:fixed;
+">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 22%;">التاريخ</th>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 25%;">الصنف</th>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 10%;">الكمية</th>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 13%;">السعر</th>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 15%;">إجمالي</th>
+                        <th style="border: 1px solid #000; padding: 4px; background-color: #eee; font-weight: bold; text-align: center; font-size: 15px; width: 15%;">المدفوع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #f9f9f9; page-break-inside: avoid;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 12px; text-align: left; font-weight: bold; font-size: 14px;">المجموع الكلي</td>
+                        <td style="border: 1px solid #000; padding: 12px; text-align: center; font-weight: bold; font-size: 16px;">${totalQty > 0 ? totalQty : "-"}</td>
+                        <td style="border: 1px solid #000; padding: 12px; text-align: center;">-</td>
+                        <td style="border: 1px solid #000; padding: 12px; text-align: center; font-weight: bold; color: red; font-size: 14px;">${totalTaken.toLocaleString("ar-EG")} ج.م</td>
+                        <td style="border: 1px solid #000; padding: 12px; text-align: center; font-weight: bold; color: green; font-size: 14px;">${totalPaid.toLocaleString("ar-EG")} ج.م</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-        /* ضبط إعدادات الصفحة والهوامش لـ PDF ذكي */
-        @page {
-          size: A4;
-          margin: 15mm 10mm 15mm 10mm;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container-fluid">
-        ${cloneCard.innerHTML}
-      </div>
-    </body>
-    </html>
-  `);
-  doc.close();
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 2px dashed #000; text-align: center; page-break-inside: avoid;">
+                <h3 style="margin: 0 0 10px 0; font-size: 18px;">إدارة الحسابات</h3>
+                <p style="margin: 5px 0; font-size: 15px; font-weight: bold;">إدارة / مصطفى موسى - 01288382254</p>
+                <p style="margin: 5px 0; font-size: 15px; font-weight: bold;">إدارة / محمد عطا - 01113879699</p>
+            </div>
 
-  // 4️⃣ انتهاء تحميل المحتويات بالكامل ثم استدعاء أمر طباعة النظام (حفظ كـ PDF)
-  iframe.contentWindow.focus();
-  setTimeout(() => {
-    iframe.contentWindow.print();
-    // تنظيف المستند وحذف الـ iframe من الذاكرة بعد دقيقة للحفاظ على سرعة المتصفح
-    setTimeout(() => iframe.remove(), 1000);
-  }, 750);
+        </div>
+    `;
+
+  // 3. إعدادات الطباعة
+  const opt = {
+    margin: 0.3,
+    filename: `كشف_حساب_${customerName}.pdf`,
+    image: { type: "jpeg", quality: 1 },
+    html2canvas: {
+      scale: 1,
+      useCORS: true,
+      scrollY: 0,
+      scrollX: 0,
+    },
+    jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+    pagebreak: {
+      mode: ["css", "legacy"],
+    },
+  };
+
+  const container = document.getElementById("pdf-generator-container");
+
+  container.innerHTML = invoiceHTML;
+  container.style.display = "block";
+
+  html2pdf()
+    .set(opt)
+    .from(container)
+    .save()
+    .then(() => {
+      container.style.display = "none";
+      container.innerHTML = "";
+    });
 }
-
 // بقية الدوال دون أي تغيير لتعمل بكفاءتها المعهودة...
 function openQuickPayModal(customerName) {
   currentPayCustomerName = customerName;

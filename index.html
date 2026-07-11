@@ -127,9 +127,12 @@
         </div>
 
     </div>
-
+    <!-- حاوية مخفية تماماً، لا تظهر للمستخدم، نستخدمها فقط لتوليد الـ PDF -->
+    <div id="pdf-generator-container" style="display: none; width: 800px; padding: 20px; background: white;">
+        <!-- هنا هننسخ محتوى الفاتورة برمجياً -->
+    </div>
     <script src="js/bootstrap.bundle.min.js"></script>
-
+    <script src="js/html2pdf.bundle.min.js"></script>
     <script src="js/dom.js"></script>
 
     <link rel="manifest" href="/manifest.json">

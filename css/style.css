@@ -8,30 +8,144 @@ body {
   box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
 }
 @media print {
-    /* 🛠️ إبقاء الخلفية بيضاء فقط لحماية الطباعة مع استرجاع ألوان الخطوط الأصلية */
-    .table-success-subtle,
-    .payment-row {
-      background-color: #ffffff !important;
-    }
-    
-    .table-success-subtle td,
-    .payment-row td {
-      background-color: #ffffff !important;
-      border: 1px solid #dee2e6 !important;
-    }
+  body > * {
+    display: none !important;
+  }
 
-    /* 🟢 استرجاع اللون الأخضر الأصلي للبوتستراب للنصوص والكلمات */
-    .text-success, 
-    .table-success-subtle strong {
-      color: #198754 !important; /* لون البوتستراب الأخضر الصريح */
-    }
+  /* 2. أظهر كلاس الطباعة فقط */
+  body.is-printing .printable-card {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100% !important;
+    padding: 10px !important;
+  }
+  /* 🛠️ إبقاء الخلفية بيضاء فقط لحماية الطباعة مع استرجاع ألوان الخطوط الأصلية */
+  .table-success-subtle,
+  .payment-row {
+    background-color: #ffffff !important;
+  }
 
-    /* تنسيق التاريخ (البادج) عشان يظهر بخلفية بيضاء خفيفة وحدود وكتابة باللون الأخضر */
-    .table-success-subtle .badge,
-    .payment-row .badge {
-      background-color: #f8f9fa !important;
-      color: #198754 !important;
-      border: 1px solid #198754 !important;
-      padding: 4px 8px !important;
-    }
+  .table-success-subtle td,
+  .payment-row td {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+  }
+
+  /* 🟢 استرجاع اللون الأخضر الأصلي للبوتستراب للنصوص والكلمات */
+  .text-success,
+  .table-success-subtle strong {
+    color: #198754 !important; /* لون البوتستراب الأخضر الصريح */
+  }
+
+  /* تنسيق التاريخ (البادج) عشان يظهر بخلفية بيضاء خفيفة وحدود وكتابة باللون الأخضر */
+  .table-success-subtle .badge,
+  .payment-row .badge {
+    background-color: #f8f9fa !important;
+    color: #198754 !important;
+    border: 1px solid #198754 !important;
+    padding: 4px 8px !important;
+  }
+  /* منع تكرار تذييل الجدول في كل صفحة وجعله يظهر في النهاية فقط */
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  table {
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* ضمان عدم انقسام صف المجموع بشكل غريب بين الصفحات */
+  tfoot tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .table-container {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  /* تنسيق خاص بملف الـ PDF لضمان عدم التصاق النصوص */
+  .pdf-export-wrapper {
+    font-family: "Cairo", sans-serif;
+    padding: 20px;
+    direction: rtl;
+    background: #fff;
+    width: 100%;
+  }
+
+  .pdf-export-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  .pdf-export-wrapper th,
+  .pdf-export-wrapper td {
+    padding: 12px 8px; /* مساحة مريحة للنصوص */
+    border: 1px solid #ccc;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .pdf-export-wrapper th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+  }
+
+  .pdf-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 10px;
+  }
+  /* تنسيق الـ PDF النظيف */
+  .invoice-pdf-container {
+    width: 100%;
+    padding: 20px;
+    font-family: "Cairo", sans-serif;
+    background: #fff;
+    color: #000;
+  }
+
+  /* الجدول - الخطوط والترتيب */
+  .invoice-pdf-container table {
+    width: 100%;
+    border-collapse: collapse; /* دمج الحدود لتظهر خطوط الجدول */
+    margin-top: 15px;
+    table-layout: fixed; /* لتوزيع العرض بانتظام */
+  }
+
+  .invoice-pdf-container th,
+  .invoice-pdf-container td {
+    border: 1px solid #333; /* خطوط الجدول */
+    padding: 10px 5px; /* مسافة داخلية لمنع التصاق الحروف */
+    text-align: center;
+    word-wrap: break-word;
+    font-size: 12px;
+  }
+
+  .invoice-pdf-container th {
+    background-color: #e9ecef !important; /* لون رمادي خفيف للرأس */
+    font-weight: bold;
+  }
+
+  /* لون مختلف للصفوف الزوجية لتسهيل القراءة */
+  .invoice-pdf-container tr:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+
+  /* تجنب قطع الصفوف عند الطباعة */
+  .invoice-pdf-container tr {
+    page-break-inside: avoid;
+  }
 }
