@@ -413,7 +413,7 @@ function exportInvoiceToPDF(cardId, customerName) {
         background:#fff;
         color:#000;
         width:97%;
-        margin:1px 0 0 0;
+        margin:1px 0 auto;
     ">
     <div style="page-break-inside: avoid;">
        <div style="
